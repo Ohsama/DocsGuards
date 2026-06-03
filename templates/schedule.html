@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}Generate Schedule{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-title"><div class="title-icon">📅</div>Generate Schedule</div>
+  <p class="page-subtitle">Select a month and year — the engine handles the rest</p>
+</div>
+
+<div style="display:grid;grid-template-columns:380px 1fr;gap:24px;align-items:start">
+
+  <!-- ── Generator form ──────────────────────────────────────────────── -->
+  <div class="card">
+    <div class="card-title" style="margin-bottom:20px">⚙️ Schedule Settings</div>
+
+    <form method="post" action="/schedule/generate" id="gen-form">
+      <div class="form-group">
+        <label class="form-label">Month</label>
+        <select class="form-control" name="month" id="sel-month">
+          {% for num, name in months %}
+          <option value="{{ num }}" {% if num == current_month %}selected{% endif %}>
+            {{ name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Year</label>
+        <select class="form-control" name="year" id="sel-year">
+          {% for y in years %}
+          <option value="{{ y }}" {% if y == current_year %}selected{% endif %}>{{ y }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <button type="submit" class="btn btn-primary w-full" style="margin-top:8px" id="gen-btn">
+        🔄 Generate Schedule
+      </button>
+    </form>
+
+    <hr class="divider">
+
+    <!-- Export form (same month/year synced via JS) -->
+    <form method="post" action="/schedule/export" id="export-form">
+      <input type="hidden" name="month" id="exp-month" value="{{ current_month }}">
+      <input type="hidden" name="year"  id="exp-year"  value="{{ current_year }}">
+      <button type="submit" class="btn btn-success w-full">
+        📥 Export to Excel (.xlsx)
+      </button>
+    </form>
+
+    <div style="margin-top:10px">
+      <form method="post" action="/schedule/save_history" id="hist-form">
+        <input type="hidden" name="month" id="hist-month" value="{{ current_month }}">
+        <input type="hidden" name="year"  id="hist-year"  value="{{ current_year }}">
+        <button type="submit" class="btn btn-ghost w-full"
+                onclick="return confirm('Save this schedule\'s holiday assignments to history?')">
+          📜 Commit Holiday History
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── Info panel ──────────────────────────────────────────────────── -->
+  <div style="display:flex;flex-direction:column;gap:18px">
+
+    <div class="card" style="background:linear-gradient(135deg,rgba(14,165,233,.06),rgba(124,58,237,.06));border-color:rgba(14,165,233,.18)">
+      <div class="card-title" style="margin-bottom:14px">📋 Scheduling Algorithm</div>
+      <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;color:var(--text2)">
+        <div style="display:flex;gap:10px">
+          <span style="color:var(--accent);font-weight:700;min-width:24px">1.</span>
+          <span>Every day is classified as <strong style="color:var(--text)">Weekday</strong> (Sun–Thu) or <strong style="color:var(--text)">Weekend</strong> (Fri–Sat).</span>
+        </div>
+        <div style="display:flex;gap:10px">
+          <span style="color:var(--accent);font-weight:700;min-width:24px">2.</span>
+          <span>Doctors on leave or inactive are automatically <strong style="color:var(--text)">excluded</strong> for that day.</span>
+        </div>
+        <div style="display:flex;gap:10px">
+          <span style="color:var(--accent);font-weight:700;min-width:24px">3.</span>
+          <span>A <strong style="color:var(--text)">Round-Robin queue</strong> rotates across the entire month — no doctor gets a second shift until everyone has had one.</span>
+        </div>
+        <div style="display:flex;gap:10px">
+          <span style="color:var(--accent);font-weight:700;min-width:24px">4.</span>
+          <span>Holiday history prevents a doctor from repeating the <strong style="color:var(--text)">same holiday</strong> two years in a row.</span>
+        </div>
+        <div style="display:flex;gap:10px">
+          <span style="color:var(--accent);font-weight:700;min-width:24px">5.</span>
+          <span><strong style="color:var(--text)">2 replacement</strong> doctors are assigned per day from the global active pool.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="margin-bottom:14px">🕐 Shift Times</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+
+        <div style="background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);border-radius:10px;padding:14px">
+          <div style="color:#818cf8;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">🌙 Weekday Night</div>
+          <div style="font-size:20px;font-weight:800;color:var(--text)">19:00 – 08:00</div>
+          <div style="color:var(--text3);font-size:11px;margin-top:4px">Sun · Mon · Tue · Wed · Thu</div>
+          <div style="color:var(--text3);font-size:11px">Pool: Standard Doctors</div>
+        </div>
+
+        <div style="background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.2);border-radius:10px;padding:14px">
+          <div style="color:#a78bfa;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">📅 Weekend — 3 Shifts</div>
+          <div style="font-size:13px;color:var(--text2);line-height:1.9">
+            🌅 Day 1 &nbsp; 08:00 – 14:00<br>
+            ☀️ Day 2 &nbsp; 14:00 – 20:00<br>
+            🌙 Night &nbsp; 20:00 – 08:00
+          </div>
+          <div style="color:var(--text3);font-size:11px;margin-top:4px">Fri · Sat · Pool: Weekend Workers</div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Keep export / history forms in sync with generator selectors
+  const selMonth = document.getElementById('sel-month');
+  const selYear  = document.getElementById('sel-year');
+
+  function syncHiddenFields() {
+    ['exp','hist'].forEach(prefix => {
+      document.getElementById(prefix + '-month').value = selMonth.value;
+      document.getElementById(prefix + '-year').value  = selYear.value;
+    });
+  }
+
+  selMonth.addEventListener('change', syncHiddenFields);
+  selYear.addEventListener('change',  syncHiddenFields);
+
+  // Loading state on generate
+  document.getElementById('gen-form').addEventListener('submit', () => {
+    const btn = document.getElementById('gen-btn');
+    btn.textContent = '⏳ Generating…';
+    btn.disabled = true;
+  });
+</script>
+{% endblock %}

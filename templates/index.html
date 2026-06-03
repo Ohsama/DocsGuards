@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-title">
+    <div class="title-icon">📊</div>
+    Dashboard
+  </div>
+  <p class="page-subtitle">Overview of your medical scheduling system</p>
+</div>
+
+<!-- ── Stats ──────────────────────────────────────────────────────────── -->
+<div class="stats-grid">
+  <div class="stat-card c-blue">
+    <div class="stat-icon">👨‍⚕️</div>
+    <div class="stat-value">{{ total }}</div>
+    <div class="stat-label">Total Doctors</div>
+  </div>
+  <div class="stat-card c-green">
+    <div class="stat-icon">🌙</div>
+    <div class="stat-value">{{ std_active }}</div>
+    <div class="stat-label">Active Standard (Weekday)</div>
+  </div>
+  <div class="stat-card c-purple">
+    <div class="stat-icon">🗓️</div>
+    <div class="stat-value">{{ wkd_active }}</div>
+    <div class="stat-label">Active Weekend Workers</div>
+  </div>
+  <div class="stat-card c-amber">
+    <div class="stat-icon">🏖️</div>
+    <div class="stat-value">{{ on_leave }}</div>
+    <div class="stat-label">Currently on Leave</div>
+  </div>
+</div>
+
+<!-- ── Content grid ─────────────────────────────────────────────────── -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:22px">
+
+  <!-- Doctor roster -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">👨‍⚕️ Doctor Roster</span>
+      <a href="/doctors" class="btn btn-ghost btn-sm">Manage →</a>
+    </div>
+
+    {% if doctors %}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in doctors %}
+          <tr>
+            <td style="font-weight:600">{{ d.name }}</td>
+            <td>
+              {% if d.type == 'Standard' %}
+                <span class="badge b-std">🌙 Standard</span>
+              {% else %}
+                <span class="badge b-wkd">📅 Weekend</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if d.status == 'Active' %}
+                <span class="badge b-active">● Active</span>
+              {% else %}
+                <span class="badge b-inactive">● Inactive</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <div class="es-icon">👨‍⚕️</div>
+      <h3>No doctors yet</h3>
+      <p>Go to Doctors to add your team.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Quick actions -->
+  <div style="display:flex;flex-direction:column;gap:18px">
+
+    <div class="card">
+      <div class="card-title" style="margin-bottom:16px">⚡ Quick Actions</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <a href="/doctors"  class="btn btn-ghost" style="justify-content:flex-start">
+          <span>👨‍⚕️</span> Manage Doctors
+        </a>
+        <a href="/schedule" class="btn btn-primary" style="justify-content:flex-start">
+          <span>📅</span> Generate Schedule
+        </a>
+        <a href="/holidays" class="btn btn-ghost" style="justify-content:flex-start">
+          <span>🌙</span> Manage Holidays
+        </a>
+        <a href="/history"  class="btn btn-ghost" style="justify-content:flex-start">
+          <span>📜</span> Holiday History
+        </a>
+      </div>
+    </div>
+
+    <div class="card" style="background:linear-gradient(135deg,rgba(14,165,233,.08),rgba(124,58,237,.08));border-color:rgba(14,165,233,.2)">
+      <div class="card-title" style="margin-bottom:10px">📋 How It Works</div>
+      <ol style="padding-left:18px;color:var(--text2);line-height:2;font-size:13px">
+        <li>Add your doctors (Standard or Weekend pool)</li>
+        <li>Set leave windows & holiday records</li>
+        <li>Generate the monthly schedule</li>
+        <li>Export to a colour-coded Excel file</li>
+      </ol>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="margin-bottom:12px">🏥 Shift Rules</div>
+      <div style="display:flex;flex-direction:column;gap:8px;font-size:12.5px;color:var(--text2)">
+        <div style="display:flex;gap:8px;align-items:center">
+          <span class="badge b-night">🌙</span>
+          <span>Sun–Thu  ·  Night  19:00 – 08:00</span>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span class="badge b-day1">🌅</span>
+          <span>Fri–Sat  ·  Day 1   08:00 – 14:00</span>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span class="badge b-day2">☀️</span>
+          <span>Fri–Sat  ·  Day 2   14:00 – 20:00</span>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span class="badge b-wkd">🌙</span>
+          <span>Fri–Sat  ·  Night  20:00 – 08:00</span>
+        </div>
+        <hr class="divider" style="margin:8px 0">
+        <div style="color:var(--text3)">
+          ↩ 2 Replacement doctors assigned every day<br>
+          ↩ Fair Round-Robin across the whole month<br>
+          ↩ Holiday memory prevents repeat assignments
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

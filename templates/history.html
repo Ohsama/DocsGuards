@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}Holiday History{% endblock %}
+
+{% block content %}
+<div class="page-header flex justify-between items-center">
+  <div>
+    <div class="page-title"><div class="title-icon">📜</div>Holiday History</div>
+    <p class="page-subtitle">Track which doctor worked which holiday in past years</p>
+  </div>
+  <button class="btn btn-primary" onclick="openModal('addHistModal')">＋ Add Record</button>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 320px;gap:22px;align-items:start">
+
+  <!-- ── History table ──────────────────────────────────────────────── -->
+  <div class="card" style="padding:0;overflow:hidden">
+    {% if history %}
+    <div class="table-wrap" style="border:none;border-radius:0">
+      <table>
+        <thead>
+          <tr>
+            <th>Doctor</th>
+            <th>Holiday</th>
+            <th>Year(s) Worked</th>
+            <th style="text-align:right">Remove</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for doc_id, holidays in history.items() %}
+            {% for hol_name, years in holidays.items() %}
+              {% for yr in years %}
+              <tr>
+                <td style="font-weight:700">
+                  {{ doc_map.get(doc_id, doc_id) }}
+                  <span style="color:var(--text3);font-size:11px;display:block;font-family:monospace">{{ doc_id }}</span>
+                </td>
+                <td>
+                  <span class="badge b-holiday">🎉 {{ hol_name }}</span>
+                </td>
+                <td>
+                  <span style="font-size:15px;font-weight:800;color:var(--accent)">{{ yr }}</span>
+                </td>
+                <td style="text-align:right">
+                  <form method="post" action="/history/delete" style="display:inline"
+                        onsubmit="return confirm('Remove this record?')">
+                    <input type="hidden" name="doctor_id"   value="{{ doc_id }}">
+                    <input type="hidden" name="holiday_name" value="{{ hol_name }}">
+                    <input type="hidden" name="year"         value="{{ yr }}">
+                    <button type="submit" class="btn btn-danger btn-sm">🗑️</button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            {% endfor %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% else %}
+    <div class="empty-state">
+      <div class="es-icon">📜</div>
+      <h3>No history records yet</h3>
+      <p>After generating a schedule, click <strong>Commit to History</strong> on the schedule view,
+         or add records manually here.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- ── Info panel ─────────────────────────────────────────────────── -->
+  <div style="display:flex;flex-direction:column;gap:16px">
+
+    <div class="card" style="background:linear-gradient(135deg,rgba(14,165,233,.06),rgba(99,102,241,.06));border-color:rgba(14,165,233,.18)">
+      <div class="card-title" style="margin-bottom:12px">📖 Why History Matters</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.8">
+        When a doctor is recorded as having worked a holiday (e.g. Eid Al-Adha Day 1) in year <strong style="color:var(--text)">N</strong>,
+        the scheduler will automatically <strong style="color:var(--red)">exclude</strong> them from that same holiday in year
+        <strong style="color:var(--text)">N + 1</strong>, ensuring fair distribution over time.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="margin-bottom:12px">⚡ Quick Tip</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.75">
+        The fastest way to populate history is to:<br><br>
+        <ol style="padding-left:16px;display:flex;flex-direction:column;gap:6px">
+          <li>Generate a schedule for the <em>current</em> year</li>
+          <li>Click <strong style="color:var(--text)">Commit to History</strong></li>
+          <li>All holiday assignments are saved automatically</li>
+        </ol>
+      </div>
+    </div>
+
+    {% if doctors %}
+    <div class="card">
+      <div class="card-title" style="margin-bottom:12px">👨‍⚕️ Doctors in System</div>
+      <div style="display:flex;flex-direction:column;gap:6px;font-size:12.5px">
+        {% for d in doctors %}
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)">
+          <span style="color:var(--text)">{{ d.name }}</span>
+          <span style="color:var(--text3);font-family:monospace">{{ d.id }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+
+
+<!-- ── Add History Record Modal ──────────────────────────────────── -->
+<div class="modal-bg" id="addHistModal">
+  <div class="modal">
+    <div class="modal-title">📜 Add History Record</div>
+    <form method="post" action="/history/add">
+      <div class="form-group">
+        <label class="form-label">Doctor</label>
+        <select class="form-control" name="doctor_id" required>
+          <option value="" disabled selected>Select a doctor…</option>
+          {% for d in doctors %}
+          <option value="{{ d.id }}">{{ d.name }} ({{ d.id }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Holiday Name</label>
+        <input class="form-control" type="text" name="holiday_name"
+               placeholder="e.g. Eid Al-Adha Day 1" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Year Worked</label>
+        <input class="form-control" type="number" name="year"
+               value="2025" min="2000" max="2099" required>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('addHistModal')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Record</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function openModal(id)  { document.getElementById(id).classList.add('open'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+  document.querySelectorAll('.modal-bg').forEach(el => {
+    el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,13 @@
+[
+  {"id": "DR001", "name": "Dr. Ahmed Al-Rashid",  "type": "Standard",       "status": "Active",   "leave_windows": []},
+  {"id": "DR002", "name": "Dr. Fatima Hassan",    "type": "Standard",       "status": "Active",   "leave_windows": []},
+  {"id": "DR003", "name": "Dr. Mohammed Khalid",  "type": "Standard",       "status": "Active",   "leave_windows": []},
+  {"id": "DR004", "name": "Dr. Sara Abdullah",    "type": "Standard",       "status": "Active",   "leave_windows": [{"start": "2026-06-10", "end": "2026-06-20", "reason": "Annual Leave"}]},
+  {"id": "DR005", "name": "Dr. Omar Al-Farsi",    "type": "Standard",       "status": "Active",   "leave_windows": []},
+  {"id": "DR006", "name": "Dr. Layla Nasser",     "type": "Standard",       "status": "Active",   "leave_windows": []},
+  {"id": "DR007", "name": "Dr. Khalid Ibrahim",   "type": "Weekend Worker", "status": "Active",   "leave_windows": []},
+  {"id": "DR008", "name": "Dr. Nora Al-Sayed",    "type": "Weekend Worker", "status": "Active",   "leave_windows": []},
+  {"id": "DR009", "name": "Dr. Hassan Mustafa",   "type": "Weekend Worker", "status": "Active",   "leave_windows": []},
+  {"id": "DR010", "name": "Dr. Rania Yousef",     "type": "Weekend Worker", "status": "Active",   "leave_windows": []},
+  {"id": "DR011", "name": "Dr. Youssef Al-Amin",  "type": "Weekend Worker", "status": "Inactive", "leave_windows": []}
+]

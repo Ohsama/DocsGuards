@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+{% block title %}Doctors{% endblock %}
+
+{% block content %}
+<div class="page-header flex justify-between items-center">
+  <div>
+    <div class="page-title"><div class="title-icon">👨‍⚕️</div>Doctors</div>
+    <p class="page-subtitle">Manage your medical team, leave windows, and availability</p>
+  </div>
+  <button class="btn btn-primary" onclick="openModal('addDoctorModal')">
+    ＋ Add Doctor
+  </button>
+</div>
+
+<!-- ── Doctor table ────────────────────────────────────────────────── -->
+<div class="card" style="padding:0;overflow:hidden">
+  {% if doctors %}
+  <div class="table-wrap" style="border:none;border-radius:0">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Status</th>
+          <th>Leave Windows</th>
+          <th style="text-align:right">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in doctors %}
+        <tr id="row-{{ d.id }}">
+          <td style="color:var(--text3);font-size:11px;font-family:monospace">{{ d.id }}</td>
+          <td style="font-weight:700">{{ d.name }}</td>
+          <td>
+            {% if d.type == 'Standard' %}
+              <span class="badge b-std">🌙 Standard</span>
+            {% else %}
+              <span class="badge b-wkd">📅 Weekend Worker</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if d.status == 'Active' %}
+              <span class="badge b-active">● Active</span>
+            {% else %}
+              <span class="badge b-inactive">● Inactive</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if d.leave_windows %}
+              <div style="display:flex;flex-direction:column;gap:4px">
+                {% for lw in d.leave_windows %}{% set i = loop.index0 %}
+                <div style="display:flex;align-items:center;gap:6px;font-size:12px">
+                  <span style="color:var(--amber)">📅</span>
+                  <span style="color:var(--text2)">
+                    {{ lw.start.strftime('%d %b') }} – {{ lw.end.strftime('%d %b %Y') }}
+                    {% if lw.reason %}<span style="color:var(--text3)"> · {{ lw.reason }}</span>{% endif %}
+                  </span>
+                  <form method="post" action="/doctors/{{ d.id }}/leave/delete/{{ i }}"
+                        style="margin:0" onsubmit="return confirm('Remove this leave window?')">
+                    <button type="submit" class="btn btn-danger btn-sm btn-icon" title="Delete leave">✕</button>
+                  </form>
+                </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <span style="color:var(--text3);font-size:12px">None</span>
+            {% endif %}
+            <button class="btn btn-ghost btn-sm mt-4"
+                    style="margin-top:6px"
+                    onclick="openLeaveModal('{{ d.id }}','{{ d.name }}')">
+              + Add Leave
+            </button>
+          </td>
+          <td style="text-align:right;white-space:nowrap">
+            <button class="btn btn-ghost btn-sm"
+                    onclick="openEditModal('{{ d.id }}','{{ d.name }}','{{ d.type }}','{{ d.status }}')">
+              ✏️ Edit
+            </button>
+            <form method="post" action="/doctors/delete/{{ d.id }}" style="display:inline"
+                  onsubmit="return confirm('Delete Dr. {{ d.name }}? This cannot be undone.')">
+              <button type="submit" class="btn btn-danger btn-sm">🗑️</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="es-icon">👨‍⚕️</div>
+    <h3>No doctors added yet</h3>
+    <p>Click <strong>+ Add Doctor</strong> to start building your team.</p>
+  </div>
+  {% endif %}
+</div>
+
+
+<!-- ════════════════════════ MODALS ════════════════════════════════════ -->
+
+<!-- Add Doctor -->
+<div class="modal-bg" id="addDoctorModal">
+  <div class="modal">
+    <div class="modal-title">➕ Add New Doctor</div>
+    <form method="post" action="/doctors/add">
+      <div class="form-group">
+        <label class="form-label">Full Name</label>
+        <input class="form-control" name="name" placeholder="Dr. Name Here" required>
+      </div>
+      <div class="form-row cols-2">
+        <div class="form-group">
+          <label class="form-label">Doctor Type</label>
+          <select class="form-control" name="type">
+            <option value="Standard">🌙 Standard (Weekday nights)</option>
+            <option value="Weekend Worker">📅 Weekend Worker</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select class="form-control" name="status">
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('addDoctorModal')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Add Doctor</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Edit Doctor -->
+<div class="modal-bg" id="editDoctorModal">
+  <div class="modal">
+    <div class="modal-title">✏️ Edit Doctor</div>
+    <form method="post" action="/doctors/update">
+      <input type="hidden" name="id" id="edit-id">
+      <div class="form-group">
+        <label class="form-label">Full Name</label>
+        <input class="form-control" name="name" id="edit-name" required>
+      </div>
+      <div class="form-row cols-2">
+        <div class="form-group">
+          <label class="form-label">Doctor Type</label>
+          <select class="form-control" name="type" id="edit-type">
+            <option value="Standard">🌙 Standard (Weekday nights)</option>
+            <option value="Weekend Worker">📅 Weekend Worker</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select class="form-control" name="status" id="edit-status">
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('editDoctorModal')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Add Leave Window -->
+<div class="modal-bg" id="addLeaveModal">
+  <div class="modal">
+    <div class="modal-title">📅 Add Leave Window</div>
+    <div style="margin-bottom:16px;color:var(--text2);font-size:13px">
+      Adding leave for: <strong id="leave-doctor-name" style="color:var(--accent)"></strong>
+    </div>
+    <form method="post" id="leave-form">
+      <div class="form-row cols-2">
+        <div class="form-group">
+          <label class="form-label">From Date</label>
+          <input class="form-control" type="date" name="start" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">To Date</label>
+          <input class="form-control" type="date" name="end" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Reason (optional)</label>
+        <input class="form-control" name="reason" placeholder="e.g. Annual Leave, Maternity, Conference…">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('addLeaveModal')">Cancel</button>
+        <button type="submit" class="btn btn-success">Add Leave</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function openModal(id)  { document.getElementById(id).classList.add('open'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+  // Close on backdrop click
+  document.querySelectorAll('.modal-bg').forEach(el => {
+    el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
+  });
+
+  function openEditModal(id, name, type, status) {
+    document.getElementById('edit-id').value     = id;
+    document.getElementById('edit-name').value   = name;
+    document.getElementById('edit-type').value   = type;
+    document.getElementById('edit-status').value = status;
+    openModal('editDoctorModal');
+  }
+
+  function openLeaveModal(docId, docName) {
+    document.getElementById('leave-doctor-name').textContent = docName;
+    document.getElementById('leave-form').action = '/doctors/' + docId + '/leave/add';
+    openModal('addLeaveModal');
+  }
+</script>
+{% endblock %}

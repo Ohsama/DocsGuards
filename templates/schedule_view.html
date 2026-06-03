@@ -1,0 +1,315 @@
+{% extends "base.html" %}
+{% block title %}Schedule – {{ month_name }} {{ year }}{% endblock %}
+
+{% block head %}
+<style>
+  .sched-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .filter-bar {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .filter-btn {
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--text2);
+    font-family: 'Inter', sans-serif;
+    transition: all .15s;
+  }
+
+  .filter-btn:hover,
+  .filter-btn.active {
+    background: var(--accent-dim);
+    color: var(--accent);
+    border-color: rgba(14,165,233,.35);
+  }
+
+  .filter-btn.f-weekend.active {
+    background: var(--purple-dim);
+    color: #a78bfa;
+    border-color: rgba(124,58,237,.35);
+  }
+
+  .filter-btn.f-holiday.active {
+    background: var(--amber-dim);
+    color: var(--amber);
+    border-color: rgba(245,158,11,.35);
+  }
+
+  /* Sticky date column group */
+  .date-cell {
+    font-weight: 700;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  .holiday-tag {
+    display: inline-block;
+    background: var(--amber-dim);
+    color: var(--amber);
+    border-radius: 6px;
+    padding: 1px 7px;
+    font-size: 10px;
+    font-weight: 700;
+    margin-left: 5px;
+  }
+
+  /* Search bar */
+  .search-wrap { position: relative; }
+  .search-wrap input {
+    padding-left: 34px;
+    width: 220px;
+  }
+  .search-wrap .search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text3);
+    font-size: 15px;
+  }
+
+  /* Summary bar */
+  .summary-bar {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    background: var(--bg-card2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 20px;
+    margin-bottom: 20px;
+    font-size: 13px;
+  }
+
+  .sum-item { color: var(--text2); }
+  .sum-item strong { color: var(--text); }
+
+  /* Unassigned warning */
+  .unassigned { color: var(--red); font-weight: 700; font-size: 12px; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ── Header ─────────────────────────────────────────────────────── -->
+<div class="page-header flex justify-between items-center" style="flex-wrap:wrap;gap:12px">
+  <div>
+    <div class="page-title">
+      <div class="title-icon">📅</div>
+      {{ month_name }} {{ year }} Schedule
+    </div>
+    <p class="page-subtitle">Generated schedule — {{ schedule|length }} shift slots</p>
+  </div>
+
+  <div class="flex gap-3" style="flex-wrap:wrap">
+    <a href="/schedule" class="btn btn-ghost">← Back</a>
+
+    <form method="post" action="/schedule/export" style="margin:0">
+      <input type="hidden" name="month" value="{{ month }}">
+      <input type="hidden" name="year"  value="{{ year }}">
+      <button type="submit" class="btn btn-success">📥 Export Excel</button>
+    </form>
+
+    <form method="post" action="/schedule/save_history" style="margin:0"
+          onsubmit="return confirm('Save holiday assignments from this schedule to Holiday History?')">
+      <input type="hidden" name="month" value="{{ month }}">
+      <input type="hidden" name="year"  value="{{ year }}">
+      <button type="submit" class="btn btn-purple">📜 Commit to History</button>
+    </form>
+  </div>
+</div>
+
+<!-- ── Summary bar ─────────────────────────────────────────────────── -->
+{% set total      = schedule|length %}
+{% set weekends   = schedule|selectattr('is_weekend')|list|length %}
+{% set holidays   = schedule|selectattr('is_holiday')|list|length %}
+{% set unassigned = schedule|selectattr('assigned_doctor','equalto','UNASSIGNED')|list|length %}
+
+<div class="summary-bar">
+  <div class="sum-item">Total shifts: <strong>{{ total }}</strong></div>
+  <div class="sum-item">Weekend shifts: <strong style="color:#a78bfa">{{ weekends }}</strong></div>
+  <div class="sum-item">Holiday shifts: <strong style="color:var(--amber)">{{ holidays }}</strong></div>
+  {% if unassigned > 0 %}
+  <div class="sum-item">⚠️ Unassigned: <strong style="color:var(--red)">{{ unassigned }}</strong></div>
+  {% else %}
+  <div class="sum-item">✅ All shifts assigned</div>
+  {% endif %}
+</div>
+
+<!-- ── Toolbar ─────────────────────────────────────────────────────── -->
+<div class="sched-toolbar">
+  <div class="filter-bar">
+    <button class="filter-btn active" data-filter="all"     onclick="applyFilter('all',this)">All</button>
+    <button class="filter-btn"        data-filter="weekday" onclick="applyFilter('weekday',this)">Weekdays</button>
+    <button class="filter-btn f-weekend" data-filter="weekend" onclick="applyFilter('weekend',this)">Weekends</button>
+    <button class="filter-btn f-holiday" data-filter="holiday" onclick="applyFilter('holiday',this)">Holidays</button>
+  </div>
+
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input class="form-control" type="text" id="search-box"
+           placeholder="Search doctor…" oninput="applySearch(this.value)">
+  </div>
+</div>
+
+<!-- ── Schedule table ─────────────────────────────────────────────── -->
+{% if schedule %}
+<div class="card" style="padding:0;overflow:hidden">
+  <div class="table-wrap" style="border:none;border-radius:0">
+    <table id="sched-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Day</th>
+          <th>Shift Type</th>
+          <th>Time Slot</th>
+          <th>Assigned Doctor</th>
+          <th>Replacement 1</th>
+          <th>Replacement 2</th>
+        </tr>
+      </thead>
+      <tbody id="sched-body">
+        {% for row in schedule %}
+        <tr class="sched-row
+              {% if row.is_holiday %} r-holiday
+              {% elif row.is_weekend %} r-weekend
+              {% endif %}"
+            data-weekend="{{ 'true' if row.is_weekend else 'false' }}"
+            data-holiday="{{ 'true' if row.is_holiday else 'false' }}"
+            data-doctor="{{ row.assigned_doctor|lower }}"
+            data-repl1="{{ row.replacement_1|lower }}"
+            data-repl2="{{ row.replacement_2|lower }}">
+
+          <!-- Date -->
+          <td class="date-cell">
+            {{ row.date }}
+            {% if row.is_holiday %}
+              <span class="holiday-tag">{{ row.holiday_name }}</span>
+            {% endif %}
+          </td>
+
+          <!-- Day -->
+          <td>
+            {% if row.is_weekend %}
+              <span style="color:#a78bfa;font-weight:600">{{ row.day_name }}</span>
+            {% else %}
+              <span style="color:var(--text2)">{{ row.day_name }}</span>
+            {% endif %}
+          </td>
+
+          <!-- Shift type -->
+          <td>
+            {% if 'Night' in row.shift_type and 'Weekend' in row.shift_type %}
+              <span class="badge b-wkd">🌙 {{ row.shift_type }}</span>
+            {% elif 'Night' in row.shift_type %}
+              <span class="badge b-night">🌙 {{ row.shift_type }}</span>
+            {% elif 'Day 1' in row.shift_type %}
+              <span class="badge b-day1">🌅 {{ row.shift_type }}</span>
+            {% else %}
+              <span class="badge b-day2">☀️ {{ row.shift_type }}</span>
+            {% endif %}
+          </td>
+
+          <!-- Time slot -->
+          <td style="font-family:monospace;font-size:12px;color:var(--text2)">{{ row.time_slot }}</td>
+
+          <!-- Assigned doctor -->
+          <td>
+            {% if row.assigned_doctor == 'UNASSIGNED' %}
+              <span class="unassigned">⚠️ UNASSIGNED</span>
+            {% else %}
+              <span style="font-weight:700;color:var(--text)">{{ row.assigned_doctor }}</span>
+            {% endif %}
+          </td>
+
+          <!-- Replacements -->
+          <td style="color:var(--text2);font-size:12.5px;font-style:italic">
+            {% if row.replacement_1 == 'UNASSIGNED' %}
+              <span class="unassigned">⚠️</span>
+            {% else %}
+              {{ row.replacement_1 }}
+            {% endif %}
+          </td>
+          <td style="color:var(--text2);font-size:12.5px;font-style:italic">
+            {% if row.replacement_2 == 'UNASSIGNED' %}
+              <span class="unassigned">⚠️</span>
+            {% else %}
+              {{ row.replacement_2 }}
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% else %}
+<div class="empty-state">
+  <div class="es-icon">📅</div>
+  <h3>No schedule generated</h3>
+  <p>Go back and select a month to generate.</p>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let currentFilter = 'all';
+  let currentSearch = '';
+
+  function applyFilter(filter, btn) {
+    currentFilter = filter;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderRows();
+  }
+
+  function applySearch(val) {
+    currentSearch = val.toLowerCase().trim();
+    renderRows();
+  }
+
+  function renderRows() {
+    document.querySelectorAll('.sched-row').forEach(row => {
+      const isWeekend = row.dataset.weekend === 'true';
+      const isHoliday = row.dataset.holiday === 'true';
+      const doctor    = row.dataset.doctor;
+      const repl1     = row.dataset.repl1;
+      const repl2     = row.dataset.repl2;
+
+      // Filter check
+      let filterOk = true;
+      if (currentFilter === 'weekend') filterOk = isWeekend;
+      if (currentFilter === 'weekday') filterOk = !isWeekend;
+      if (currentFilter === 'holiday') filterOk = isHoliday;
+
+      // Search check
+      let searchOk = true;
+      if (currentSearch) {
+        searchOk = doctor.includes(currentSearch) ||
+                   repl1.includes(currentSearch)  ||
+                   repl2.includes(currentSearch);
+      }
+
+      row.style.display = (filterOk && searchOk) ? '' : 'none';
+    });
+  }
+</script>
+{% endblock %}

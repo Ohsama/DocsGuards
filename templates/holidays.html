@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}Holidays{% endblock %}
+
+{% block content %}
+<div class="page-header flex justify-between items-center">
+  <div>
+    <div class="page-title"><div class="title-icon">🌙</div>Holidays</div>
+    <p class="page-subtitle">Define public and religious holidays — the scheduler will respect them</p>
+  </div>
+  <button class="btn btn-primary" onclick="openModal('addHolidayModal')">＋ Add Holiday</button>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 340px;gap:22px;align-items:start">
+
+  <!-- ── Holiday table ──────────────────────────────────────────────── -->
+  <div class="card" style="padding:0;overflow:hidden">
+    {% if holidays %}
+    <div class="table-wrap" style="border:none;border-radius:0">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Day</th>
+            <th>Holiday Name</th>
+            <th style="text-align:right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for date_str, name in holidays.items() %}
+          {% set d = date_str %}
+          <tr class="r-holiday">
+            <td style="font-weight:700;font-family:monospace">{{ d }}</td>
+            <td>
+              {% set parts = d.split('-') %}
+              {% if parts|length == 3 %}
+                {% set y = parts[0]|int %}
+                {% set m = parts[1]|int %}
+                {% set day = parts[2]|int %}
+                <span style="color:var(--amber)">
+                  {{ ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][
+                       ((day + (13*(m if m >= 3 else m+12) - 2)//5 + (y if m >= 3 else y-1)%100 + (y if m >= 3 else y-1)%100//4 - (y if m >= 3 else y-1)//100 + (y if m >= 3 else y-1)//400) % 7) ] }}
+                </span>
+              {% endif %}
+            </td>
+            <td>
+              <span class="badge b-holiday">🎉 {{ name }}</span>
+            </td>
+            <td style="text-align:right">
+              <form method="post" action="/holidays/delete" style="display:inline"
+                    onsubmit="return confirm('Remove holiday « {{ name }} »?')">
+                <input type="hidden" name="date" value="{{ d }}">
+                <button type="submit" class="btn btn-danger btn-sm">🗑️ Remove</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% else %}
+    <div class="empty-state">
+      <div class="es-icon">🌙</div>
+      <h3>No holidays defined</h3>
+      <p>Add national or religious holidays so the scheduler can apply holiday memory rules.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- ── Info panel ─────────────────────────────────────────────────── -->
+  <div style="display:flex;flex-direction:column;gap:16px">
+
+    <div class="card" style="background:linear-gradient(135deg,rgba(245,158,11,.06),rgba(239,68,68,.04));border-color:rgba(245,158,11,.2)">
+      <div class="card-title" style="margin-bottom:12px;color:var(--amber)">📖 How Holidays Work</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.75">
+        <p>When a date is marked as a holiday:</p>
+        <ul style="padding-left:16px;margin-top:8px;display:flex;flex-direction:column;gap:6px">
+          <li>The holiday name is shown in the schedule table.</li>
+          <li>After generating and committing, doctors assigned to that holiday are saved in <strong style="color:var(--text)">Holiday History</strong>.</li>
+          <li>Next year, those doctors will be <strong style="color:var(--text)">automatically skipped</strong> for that same holiday.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="margin-bottom:12px">💡 Examples</div>
+      <div style="font-size:12.5px;color:var(--text2);display:flex;flex-direction:column;gap:8px">
+        <div style="background:var(--amber-dim);border-radius:8px;padding:10px">
+          <strong style="color:var(--amber)">Eid Al-Adha</strong><br>
+          Add each day as a separate holiday entry so individual days can be tracked independently.
+        </div>
+        <div style="background:var(--accent-dim);border-radius:8px;padding:10px">
+          <strong style="color:var(--accent)">National Day</strong><br>
+          A single date entry covers the entire day across all shift types.
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Add Holiday Modal ─────────────────────────────────────────── -->
+<div class="modal-bg" id="addHolidayModal">
+  <div class="modal">
+    <div class="modal-title">🎉 Add Holiday</div>
+    <form method="post" action="/holidays/add">
+      <div class="form-group">
+        <label class="form-label">Date</label>
+        <input class="form-control" type="date" name="date" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Holiday Name</label>
+        <input class="form-control" type="text" name="name"
+               placeholder="e.g. Eid Al-Adha Day 1, National Day…" required>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('addHolidayModal')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Holiday</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function openModal(id)  { document.getElementById(id).classList.add('open'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+  document.querySelectorAll('.modal-bg').forEach(el => {
+    el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
+  });
+</script>
+{% endblock %}
