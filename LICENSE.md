@@ -1,12 +1,32 @@
-# Copyright (c) 2026 DocsGuards
+All Rights Reserved
 
-All rights reserved.
+Copyright (c) 2024-2026 Oussama Boukhalfa (github.com/Ohsama)
 
-This software and associated documentation files (the "Software") are the proprietary property of the creator. 
+TERMS AND CONDITIONS
 
-**Strictly No Unauthorized Use**
-Permission is strictly required to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software. 
+1. VIEWING PERMITTED
+   You may view and read the source code of this project for personal,
+   educational, or evaluation purposes only.
 
-You may not use this Software for commercial or non-commercial purposes without obtaining explicit, written permission from the copyright holder.
+2. ALL OTHER RIGHTS RESERVED
+   No part of this software, including but not limited to its source code,
+   compiled binaries, documentation, design assets, or any other component,
+   may be:
+     - copied or reproduced (in whole or in part);
+     - modified, adapted, or translated;
+     - distributed, published, or made publicly available;
+     - sublicensed or relicensed;
+     - used commercially or for financial gain;
+     - incorporated into any other project, product, or service;
+   without the explicit prior written permission of the copyright holder.
 
-For inquiries regarding permission to use, please contact the author.
+3. NO WARRANTY
+   THIS SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+   EXPRESS OR IMPLIED. THE AUTHOR ACCEPTS NO LIABILITY FOR ANY DAMAGES
+   ARISING FROM THE USE OR INABILITY TO USE THIS SOFTWARE.
+
+4. CONTACT
+   For licensing inquiries or permission requests, contact the author via
+   GitHub: https://github.com/Ohsama
+
+This license is effective as of the first public commit of this repository.
